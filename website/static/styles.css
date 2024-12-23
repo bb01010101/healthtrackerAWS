@@ -1,0 +1,109 @@
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    color: #444;
+    background-color: #f9f9f9;
+}
+
+h1 {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-size: 36px;
+    color: navy;
+    text-align: center;
+}
+
+p {
+    font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    color: #444;
+    margin-bottom: 1em;
+}
+
+.text-large {
+    font-size: 2rem !important;
+}
+
+.text-medium {
+    font-size: 1.5rem !important;
+}
+
+.typewriter {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Welcome message types first */
+h1.typewriter::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 100%;
+  background: white;
+  border-left: 2px solid #666;
+  animation: typing 0.5s steps(30) forwards;
+}
+
+/* Add Daily Entry header */
+h2.typewriter::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 100%;
+  background: white;
+  border-left: 2px solid #666;
+  animation: typing 0.5s steps(30) forwards;
+}
+
+/* Main message types second */
+p.typewriter::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 100%;
+  background: white;
+  border-left: 2px solid #666;
+  animation: typing 1.5s steps(40) forwards 0.5s;
+}
+
+.button-container {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeInUp 0.5s ease forwards 2.5s;
+}
+
+@keyframes typing {
+  to { 
+    width: 0;
+    border-left: transparent;
+  }
+}
+
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+} 
+
+.table-responsive {
+    margin-top: 20px;
+}
+
+.table th {
+    background-color: #f8f9fa;
+}
+
+.table-primary {
+    background-color: rgba(0, 123, 255, 0.1) !important;
+}
+
+#metric-select, #timeframe-select {
+    margin-bottom: 10px;
+}

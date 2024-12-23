@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header theme-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h2 class="mb-0">
+                            <i class="fas fa-chart-bar me-2"></i>Your Progress Charts
+                        </h2>
+                        <a href="{{ url_for('views.add_entry') }}" class="btn theme-btn-outline">
+                            <i class="fas fa-plus me-2"></i>Add Entry
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Time Range Selector -->
+                    <div class="btn-group mb-4" role="group">
+                        <button type="button" class="btn theme-btn-outline-dark active" data-range="daily">Daily</button>
+                        <button type="button" class="btn theme-btn-outline-dark" data-range="weekly">Weekly</button>
+                        <button type="button" class="btn theme-btn-outline-dark" data-range="monthly">Monthly</button>
+                        <button type="button" class="btn theme-btn-outline-dark" data-range="yearly">Yearly</button>
+                    </div>
+
+                    <!-- Charts Container -->
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="chart-container">
+                                <canvas id="sleepChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="chart-container">
+                                <canvas id="caloriesChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="chart-container">
+                                <canvas id="waterChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="chart-container">
+                                <canvas id="runningChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="chart-container">
+                                <canvas id="screenTimeChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .theme-header {
+        background-color: #9C27B0;
+        color: white;
+        padding: 1rem;
+        border: none;
+    }
+
+    .theme-btn-outline {
+        background-color: transparent;
+        color: white;
+        border: 2px solid white;
+        padding: 0.5rem 1rem;
+        transition: all 0.2s ease;
+        border-radius: 0.5rem;
+    }
+
+    .theme-btn-outline:hover {
+        background-color: white;
+        color: #9C27B0;
+    }
+
+    .theme-btn-outline-dark {
+        background-color: transparent;
+        color: #495057;
+        border: 2px solid #9C27B0;
+        padding: 0.5rem 1.5rem;
+        transition: all 0.2s ease;
+    }
+
+    .theme-btn-outline-dark:hover,
+    .theme-btn-outline-dark.active {
+        background-color: #9C27B0;
+        color: white;
+        border-color: #9C27B0;
+    }
+
+    .card {
+        border: none;
+        border-radius: 1rem;
+        overflow: hidden;
+    }
+
+    .chart-container {
+        background-color: white;
+        padding: 1.5rem;
+        border-radius: 1rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        height: 300px;
+        position: relative;
+    }
+
+    /* Chart Customization */
+    canvas {
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    /* Button Group Styling */
+    .btn-group {
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+
+    .btn-group .btn {
+        border-radius: 0;
+        margin: 0;
+        font-weight: 500;
+    }
+
+    .btn-group .btn:first-child {
+        border-top-left-radius: 0.5rem;
+        border-bottom-left-radius: 0.5rem;
+    }
+
+    .btn-group .btn:last-child {
+        border-top-right-radius: 0.5rem;
+        border-bottom-right-radius: 0.5rem;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .chart-container {
+            height: 250px;
+            padding: 1rem;
+        }
+
+        .btn-group {
+            width: 100%;
+            display: flex;
+        }
+
+        .btn-group .btn {
+            flex: 1;
+            padding: 0.5rem;
+            font-size: 0.9rem;
+        }
+    }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Chart.js configuration and data
+    const chartData = {{ chart_data|tojson|safe }};
+    console.log('Chart data:', chartData); // Debug log
+    let currentRange = 'daily';
+    
+    // Chart colors
+    const chartColors = {
+        purple: '#9C27B0',
+        purpleLight: 'rgba(156, 39, 176, 0.2)',
+        purpleBorder: 'rgba(156, 39, 176, 0.8)'
+    };
+
+    // Common chart options
+    const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: {
+                    color: 'rgba(0,0,0,0.05)'
+                }
+            },
+            x: {
+                grid: {
+                    display: false
+                }
+            }
+        }
+    };
+
+    // Create charts
+    function createChart(ctx, label, data, yAxisLabel) {
+        // Convert date strings to formatted dates
+        const formattedLabels = Object.keys(data).map(dateStr => {
+            const date = new Date(dateStr);
+            if (currentRange === 'daily') {
+                return date.toLocaleDateString('en-US', { 
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                });
+            } else if (currentRange === 'weekly') {
+                // For weekly data, show the week's start date
+                return `Week of ${date.toLocaleDateString('en-US', { 
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                })}`;
+            } else if (currentRange === 'monthly') {
+                return date.toLocaleDateString('en-US', { 
+                    month: 'short',
+                    year: 'numeric'
+                });
+            } else {
+                return date.toLocaleDateString('en-US', { 
+                    year: 'numeric'
+                });
+            }
+        });
+
+        return new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: formattedLabels,
+                datasets: [{
+                    label: label,
+                    data: Object.values(data),
+                    borderColor: chartColors.purple,
+                    backgroundColor: chartColors.purpleLight,
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                ...commonOptions,
+                plugins: {
+                    ...commonOptions.plugins,
+                    title: {
+                        display: true,
+                        text: label,
+                        color: '#495057',
+                        font: {
+                            size: 16,
+                            weight: '600'
+                        }
+                    }
+                },
+                scales: {
+                    ...commonOptions.scales,
+                    x: {
+                        ...commonOptions.scales.x,
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    },
+                    y: {
+                        ...commonOptions.scales.y,
+                        title: {
+                            display: true,
+                            text: yAxisLabel
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Initialize charts
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM loaded, initializing charts...'); // Debug log
+        
+        const sleepChart = createChart(
+            document.getElementById('sleepChart').getContext('2d'),
+            'Sleep Hours',
+            chartData[currentRange]['sleep_hours'],
+            'Hours'
+        );
+
+        const caloriesChart = createChart(
+            document.getElementById('caloriesChart').getContext('2d'),
+            'Calories',
+            chartData[currentRange]['calories'],
+            'Calories'
+        );
+
+        const waterChart = createChart(
+            document.getElementById('waterChart').getContext('2d'),
+            'Water Intake',
+            chartData[currentRange]['water_intake'],
+            'Ounces'
+        );
+
+        const runningChart = createChart(
+            document.getElementById('runningChart').getContext('2d'),
+            'Running Mileage',
+            chartData[currentRange]['running_mileage'],
+            'Miles'
+        );
+
+        const screenTimeChart = createChart(
+            document.getElementById('screenTimeChart').getContext('2d'),
+            'Screen Time',
+            chartData[currentRange]['screen_time'],
+            'Hours'
+        );
+
+        // Time range selector functionality
+        document.querySelectorAll('[data-range]').forEach(button => {
+            button.addEventListener('click', function() {
+                const range = this.dataset.range;
+                currentRange = range;
+                
+                // Update active button
+                document.querySelectorAll('[data-range]').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                this.classList.add('active');
+
+                // Update charts
+                updateChart(sleepChart, 'sleep_hours');
+                updateChart(caloriesChart, 'calories');
+                updateChart(waterChart, 'water_intake');
+                updateChart(runningChart, 'running_mileage');
+                updateChart(screenTimeChart, 'screen_time');
+            });
+        });
+
+        function updateChart(chart, metric) {
+            chart.data.labels = Object.keys(chartData[currentRange][metric]);
+            chart.data.datasets[0].data = Object.values(chartData[currentRange][metric]);
+            chart.update();
+        }
+    });
+</script>
+{% endblock %}
